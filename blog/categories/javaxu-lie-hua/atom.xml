@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Java序列化 | Aries-ckt Blog]]></title>
+  <link href="http://Aries-ckt.github.io/blog/categories/javaxu-lie-hua/atom.xml" rel="self"/>
+  <link href="http://Aries-ckt.github.io/"/>
+  <updated>2015-09-05T15:48:09+08:00</updated>
+  <id>http://Aries-ckt.github.io/</id>
+  <author>
+    <name><![CDATA[Aries-ckt]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Transient关键字]]></title>
+    <link href="http://Aries-ckt.github.io/blog/2015/08/28/transientguan-jian-zi/"/>
+    <updated>2015-08-28T21:22:17+08:00</updated>
+    <id>http://Aries-ckt.github.io/blog/2015/08/28/transientguan-jian-zi</id>
+    <content type="html"><![CDATA[<h1>transient关键字作用及使用方法！</h1>
+
+<p>我们都知道一个对象只要实现了Serilizable接口，这个对象就可以被序列化，java的这种序列化模式为开发者提供了很多便利，我们可以不必关系具体序列化的过程，只要这个类实现了Serilizable接口，这个类的所有属性和方法都会自动序列化。</p>
+
+<p>然而在实际开发过程中，我们常常会遇到这样的问题，这个类的有些属性需要序列化，而其他属性不需要被序列化，打个比方，如果一个用户有一些敏感信息（如密码，银行卡号等），为了安全起见，不希望在网络操作（主要涉及到序列化操作，本地序列化缓存也适用）中被传输，这些信息对应的变量就可以加上transient关键字。换句话说，这个字段的生命周期仅存于调用者的内存中而不会写到磁盘里持久化。</p>
+
+<p>总之，java 的transient关键字为我们提供了便利，你只需要实现Serilizable接口，将不需要序列化的属性前添加关键字transient，序列化对象的时候，这个属性就不会序列化到指定的目的地中。</p>
+
+<h1>transient使用小结</h1>
+
+<p>1）一旦变量被transient修饰，变量将不再是对象持久化的一部分，该变量内容在序列化后无法获得访问。</p>
+
+<p>2）transient关键字只能修饰变量，而不能修饰方法和类。注意，本地变量是不能被transient关键字修饰的。变量如果是用户自定义类变量，则该类需要实现Serializable接口。</p>
+
+<p>3）被transient关键字修饰的变量不再能被序列化，一个静态变量不管是否被transient修饰，均不能被序列化。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[“Java序列化”]]></title>
+    <link href="http://Aries-ckt.github.io/blog/2015/08/15/title/"/>
+    <updated>2015-08-15T12:31:15+08:00</updated>
+    <id>http://Aries-ckt.github.io/blog/2015/08/15/title</id>
+    <content type="html"><![CDATA[<h1>Java对象的序列化</h1>
+
+<p>当两个进程在进行远程通信时，彼此可以发送各种类型的数据。无论是何种类型的数据，都会以二进制序列的形式在网络上传送。发送方需要把这个Java对象转换为字节序列，才能在网络上传送；接收方则需要把字节序列再恢复为Java对象。
+　　只能将支持 java.io.Serializable 接口的对象写入流中。每个 serializable 对象的类都被编码，编码内容包括类名和类签名、对象的字段值和数组值，以及从初始对象中引用的其他所有对象的闭包。</p>
+
+<h2>1.概念</h2>
+
+<p>序列化：把Java对象转换为字节序列的过程。
+反序列化：把字节序列恢复为Java对象的过程。</p>
+
+<h2>2.用途</h2>
+
+<p>对象的序列化主要有两种用途：
+　　1） 把对象的字节序列永久地保存到硬盘上，通常存放在一个文件中；
+　　2） 在网络上传送对象的字节序列。</p>
+
+<h2>3.对象的序列化</h2>
+
+<h3>3.1对象序列化API</h3>
+
+<p>java.io.ObjectOutputStream代表对象输出流，它的writeObject(Object obj)方法可对参数指定的obj对象进行序列化，把得到的字节序列写到一个目标输出流中。只有实现了Serializable和Externalizable接口的类的对象才能被序列化。</p>
+
+<p>　　java.io.ObjectInputStream代表对象输入流，它的readObject()方法从一个源输入流中读取字节序列，再把它们反序列化为一个对象，并将其返回。</p>
+
+<h3>3.2示例代码</h3>
+
+<pre class="brush:java;gutter:true;">
+import java.io.*;
+import java.util.Date;
+
+public class ObjectSaver {
+    public static void main(String[] args) throws Exception {
+        /*其中的  D:\\objectFile.obj 表示存放序列化对象的文件*/
+
+        
+        //序列化对象
+        ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("D:\\objectFile.obj"));
+        Customer customer = new Customer("王麻子", 24);    
+        out.writeObject("你好!");    //写入字面值常量
+        out.writeObject(new Date());    //写入匿名Date对象
+        out.writeObject(customer);    //写入customer对象
+        out.close();
+
+        
+        //反序列化对象
+        ObjectInputStream in = new ObjectInputStream(new FileInputStream("D:\\objectFile.obj"));
+        System.out.println("obj1 " + (String) in.readObject());    //读取字面值常量
+        System.out.println("obj2 " + (Date) in.readObject());    //读取匿名Date对象
+        Customer obj3 = (Customer) in.readObject();    //读取customer对象
+        System.out.println("obj3 " + obj3);
+        in.close();
+    }
+}
+
+class Customer implements Serializable {
+    private String name;
+    private int age;
+    public Customer(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String toString() {
+        return "name=" + name + ", age=" + age;
+    }
+}
+</pre>
+
+]]></content>
+  </entry>
+  
+</feed>
