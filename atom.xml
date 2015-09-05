@@ -4,7 +4,7 @@
   <title><![CDATA[Aries-ckt Blog]]></title>
   <link href="http://aries-ckt.github.io/atom.xml" rel="self"/>
   <link href="http://aries-ckt.github.io/"/>
-  <updated>2015-09-05T21:26:03+08:00</updated>
+  <updated>2015-09-05T22:00:35+08:00</updated>
   <id>http://aries-ckt.github.io/</id>
   <author>
     <name><![CDATA[Aries-ckt]]></name>
@@ -323,15 +323,6 @@ done
 <p>2）transient关键字只能修饰变量，而不能修饰方法和类。注意，本地变量是不能被transient关键字修饰的。变量如果是用户自定义类变量，则该类需要实现Serializable接口。</p>
 
 <p>3）被transient关键字修饰的变量不再能被序列化，一个静态变量不管是否被transient修饰，均不能被序列化。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Hello Blog]]></title>
-    <link href="http://aries-ckt.github.io/blog/2015/08/16/hello-blog/"/>
-    <updated>2015-08-16T00:00:00+08:00</updated>
-    <id>http://aries-ckt.github.io/blog/2015/08/16/hello-blog</id>
-    <content type="html"><![CDATA[<p>hello!</p>
 ]]></content>
   </entry>
   
