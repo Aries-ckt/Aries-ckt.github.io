@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Linux | Aries-ckt Blog]]></title>
-  <link href="http://Aries-ckt.github.io/blog/categories/linux/atom.xml" rel="self"/>
-  <link href="http://Aries-ckt.github.io/"/>
-  <updated>2015-09-05T15:48:09+08:00</updated>
-  <id>http://Aries-ckt.github.io/</id>
+  <link href="http://aries-ckt.github.io/blog/categories/linux/atom.xml" rel="self"/>
+  <link href="http://aries-ckt.github.io/"/>
+  <updated>2015-09-05T21:26:03+08:00</updated>
+  <id>http://aries-ckt.github.io/</id>
   <author>
     <name><![CDATA[Aries-ckt]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Bash基础操作]]></title>
-    <link href="http://Aries-ckt.github.io/blog/2015/09/05/bashji-chu-cao-zuo/"/>
+    <link href="http://aries-ckt.github.io/blog/2015/09/05/bashji-chu-cao-zuo/"/>
     <updated>2015-09-05T15:35:47+08:00</updated>
-    <id>http://Aries-ckt.github.io/blog/2015/09/05/bashji-chu-cao-zuo</id>
+    <id>http://aries-ckt.github.io/blog/2015/09/05/bashji-chu-cao-zuo</id>
     <content type="html"><![CDATA[<h2>bash基础操作</h2>
 
 <p>bash应该是目前Linux上最流行的shell脚本解释程序了（还有个shell叫dash，我太讨厌这个东东了。），只要你在linux上工作，并且希望自己能够工作得更愉悦，那么你应该熟悉最基本的bash编程，因为它将给你的工作带来足够的幸福感。本文将总结一些我自己平时使用的bash基本编程知识，和大家分享，也便于自己查询。</p>
