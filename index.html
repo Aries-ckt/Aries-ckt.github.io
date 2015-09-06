@@ -9,7 +9,7 @@
   <meta name="author" content="Aries-ckt">
 
   
-  <meta name="description" content="bash基础操作 bash应该是目前Linux上最流行的shell脚本解释程序了（还有个shell叫dash，我太讨厌这个东东了。），只要你在linux上工作，并且希望自己能够工作得更愉悦，那么你应该熟悉最基本的bash编程，因为它将给你的工作带来足够的幸福感。 &hellip;">
+  <meta name="description" content="spring-security授权以及验证方法总结 其授权验证方法过程： 1、当Web服务器启动时，通过Web.xml中对于Spring Security的配置，加载过滤器链，那么在加载MyFilterSecurityInterceptor类时，会注入 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -71,6 +71,56 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2015/09/06/spring-security/">Spring-security</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-09-06T21:01:45+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:01 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>spring-security授权以及验证方法总结</h2>
+
+<p>其授权验证方法过程：
+ 1、当Web服务器启动时，通过Web.xml中对于Spring Security的配置，加载过滤器链，那么在加载MyFilterSecurityInterceptor类时，会注入 MyInvocationSecurityMetadataSourceService、MyUserDetailsService、 MyAccessDecisionManager类。</p>
+
+<p> 2、该MyInvocationSecurityMetadataSourceService类在执行时会提取数据库中所有的用户权限，形成权限列表；
+并循环该权限列表，通过每个权限再从数据库中提取出该权限所对应的资源列表，并将资源（URL）作为key，权限列表作为value，形成Map结构的数据。</p>
+
+<p> 3、当用户登录时，AuthenticationManager进行响应，通过用户输入的用户名和密码，然后再根据用户定义的密码算法和盐值等进行计算并和数据库比对，
+当正确时通过验证。此时MyUserDetailsService进行响应，根据用户名从数据库中提取该用户的权限列表，组合成UserDetails供Spring Security使用。</p>
+
+<p> 4、当用户点击某个功能时，触发MyAccessDecisionManager类，该类通过decide方法对用户的资源访问进行拦截。
+用户点击某个功能时，实际上是请求某个URL或Action， 无论.jsp也好，.action或.do也好，在请求时无一例外的表现为URL。
+还记得第2步时那个Map结构的数据吗？ 若用户点击了"login.action"这个URL之后，那么这个URL就跟那个Map结构的数据中的key对比，若两者相同，
+则根据该url提取出Map结构的数据中的value来，这说明：若要请求这个URL，必须具有跟这个URL相对应的权限值。这个权限有可能是一个单独的权限，
+也有可能是一个权限列表，也就是说，一个URL有可能被多种权限访问。</p>
+
+<p> 那好，我们在MyAccessDecisionManager类的decide这个方法里，将通过URL取得的权限列表进行循环，然后跟第 3步中登录的用户所具有的权限进行比对，若相同，则表明该用户具有访问该资源的权利。 不大明白吧？  简单地说， 在数据库中我们定义了访问“LOGIN”这个URL必须是具有ROLE_ADMIN权限的人来访问，那么，登录用户恰恰具有该ROLE_ADMIN权限， 两者的比对过程中，就能够返回TRUE，可以允许该用户进行访问。就这么简单！</p>
+
+<p>不过在第2步的时候，一定要注意，MyInvocationSecurityMetadataSoruceService类的loadResourceDefine()方法中，形成以URL为key，权限列表为value的Map时，
+要注意key和Value的对应性，避免Value的不正确对应形成重复，这样会导致没有权限的人也能访问到不该访问到的资源。
+还有getAttributes()方法，要有 url.indexOf(&ldquo;?&rdquo;)这样的判断，要通过判断对URL特别是Action问号之前的部分进行匹配，防止用户请求的带参数的URL与你数据库中定义的URL不匹配，造成访问拒绝！</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2015/09/05/bashji-chu-cao-zuo/">Bash基础操作</a></h1>
     
     
@@ -89,7 +139,7 @@
 
   <div class="entry-content"><h2>bash基础操作</h2>
 
-<p>bash应该是目前Linux上最流行的shell脚本解释程序了（还有个shell叫dash，我太讨厌这个东东了。），只要你在linux上工作，并且希望自己能够工作得更愉悦，那么你应该熟悉最基本的bash编程，因为它将给你的工作带来足够的幸福感。本文将总结一些我自己平时使用的bash基本编程知识，和大家分享，也便于自己查询。</p>
+<p>bash应该是目前Linux上最流行的shell脚本解释程序了（还有个shell叫dash），</p>
 
 <h3>变量</h3>
 
@@ -331,7 +381,7 @@ echo &ldquo;1.5 + 1&rdquo; | bc</p>
 
 <h3>代码生成</h3>
 
-<p>程序员应该是”懒惰“的，”懒惰“的程序员可以创造出更多的自动化工具。我喜欢用bash来辅助我完成一些代码的自动生成，当然不是所有的代码都可以自动生成，如果那样也就不需要程序员了。我认为好的程序一定是可扩展的，最好的可扩展程序是”完成程序框架等开发后的功能需求开发阶段不再需要过分的写代码，只需要填代码“，能够填的代码，一定是可以自动生成的，这样的程序开发就将形成一个良性的循环。最近我非常热衷于重构我的代码，尽量让我的代码可以用bash脚本来自动生成，这将极大的提高我的开发效率。</p>
+<p>程序员应该是”懒惰“的，”懒惰“的程序员可以创造出更多的自动化工具。我喜欢用bash来辅助我完成一些代码的自动生成，当然不是所有的代码都可以自动生成，如果那样也就不需要程序员了。我认为好的程序一定是可扩展的，最好的可扩展程序是”完成程序框架等开发后的功能需求开发阶段不再需要过分的写代码，只需要填代码“，能够填的代码，一定是可以自动生成的，这样的程序开发就将形成一个良性的循环。重构代码，尽量让代码可以用bash脚本来自动生成，这将极大的提高开发效率。</p>
 
 <p>如何自动生成代码，生成什么样的代码，是根据自己的实际情况来完成的，这里没法介绍具体的代码生成，只能介绍bash用来完成代码生成的工具——cat。使用过linux的人都知道cat，这里就不详细说明了，只展示一段简单的bash脚本输出hello world程序。</p>
 
@@ -365,10 +415,6 @@ do
     echo $c1 : $c2
 done
 这样read文件，第一列就赋值给了c1，第二列就赋值给了c2。这有点ruby，python，go等优秀语言支持的多变量赋值的味道。</p>
-
-<h3>sed和awk</h3>
-
-<p>我想sed和awk，绝对是两大神器，不过真正能驾驭它们的人并不多。我也只是略知皮毛，因此就不在这里废话了。学习任何一门编程语言，到体现生产力的时候，都是拼库。bash没有库函数的说法，但却有着丰富的linux命令，要写出真正强大有意义的bash程序，不得不学习一些linux命令，只有掌握了足够的linux命令，才能驾轻就熟。就像大多数java程序员一样，没有丰富的库，只掌握语法的他们也许什么有意义的事情都干不了。C/C++程序员也不例外，虽然他们热衷于用仅有的一点语法去重造轮子。</p>
 </div>
   
   
@@ -424,7 +470,7 @@ done
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2015/08/15/title/">“Java序列化”</a></h1>
+      <h1 class="entry-title"><a href="/blog/2015/08/15/serializble/">“Java序列化”</a></h1>
     
     
       <p class="meta">
@@ -528,6 +574,10 @@ class Customer implements Serializable {
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015/09/06/spring-security/">Spring-security</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/09/05/bashji-chu-cao-zuo/">Bash基础操作</a>
       </li>
     
@@ -536,7 +586,7 @@ class Customer implements Serializable {
       </li>
     
       <li class="post">
-        <a href="/blog/2015/08/15/title/">“Java序列化”</a>
+        <a href="/blog/2015/08/15/serializble/">“Java序列化”</a>
       </li>
     
   </ul>
