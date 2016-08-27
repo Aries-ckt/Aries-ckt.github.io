@@ -9,7 +9,13 @@
   <meta name="author" content="Aries-ckt">
 
   
-  <meta name="description" content="spring-security授权以及验证方法总结 其授权验证方法过程： 1、当Web服务器启动时，通过Web.xml中对于Spring Security的配置，加载过滤器链，那么在加载MyFilterSecurityInterceptor类时，会注入 &hellip;">
+  <meta name="description" content="并发容器（CopyOnWrite系列，ConcurrentHashMap） copyOnWriteArrayList get()没有加锁 1
+2
+3
+public E get(int index) { return get(getArray(), index);
+} add()，加锁 1
+2
+3 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +71,479 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/08/27/javabing-fa-rong-qi/">Java并发容器</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-08-27T14:47:46+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>27</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>2:47 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>并发容器（CopyOnWrite系列，ConcurrentHashMap）</h3>
+
+<h4>copyOnWriteArrayList</h4>
+
+<p>get()没有加锁</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>public E get(int index) {
+</span><span class='line'>        return get(getArray(), index);
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>add()，加锁</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>public boolean add(E e){
+</span><span class='line'>    final ReentrantLock lock = this.lock;
+</span><span class='line'>    lock.lock();
+</span><span class='line'>    try{
+</span><span class='line'>        Object[] elements=getArray();
+</span><span class='line'>        int len=elements.length;
+</span><span class='line'>        Object[] newElements=Arrays.copyOf(elements,len+1);
+</span><span class='line'>        newElements[len]=e;
+</span><span class='line'>        setArray(newElements);
+</span><span class='line'>        return true;
+</span><span class='line'>    } finally{
+</span><span class='line'>        lock.unlock();
+</span><span class='line'>    }
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>ConcurrentHashMap</h3>
+
+<p>ConcurrentHashMap数据结构：（是一个Segment数组）</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>final Segment&lt;K,V&gt;[] segments;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Segment的数据结构：（是一个HashEntry的数组）</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>static final class Segment&lt;K,V&gt; extends ReentrantLock implements Serializable {
+</span><span class='line'>    ...
+</span><span class='line'>    transient volatile HashEntry&lt;K,V&gt;[] table; //发现Segment实际上是HashEntry数组
+</span><span class='line'>    ...
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>HashEntry的数据结构：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>static final class HashEntry&lt;K,V&gt; {
+</span><span class='line'>    final K key;
+</span><span class='line'>    final int hash;
+</span><span class='line'>    volatile V value;
+</span><span class='line'>    final HashEntry&lt;K,V&gt; next;
+</span><span class='line'>    ...
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>所涉及的方法：
+不用加锁的：get，containsKey等
+段（Segment）内加锁的:put，putIfAbsent，remove，replace等
+整个数据结构加锁的：size，containsValue等</p>
+
+<p>构造方法：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>public ConcurrentHashMap(int initialCapacity,float loadFactor, int concurrencyLevel) {
+</span><span class='line'>    if (!(loadFactor &gt; 0) || initialCapacity &lt; 0 || concurrencyLevel &lt;= 0)
+</span><span class='line'>        throw new IllegalArgumentException();  //参数合法性校验
+</span><span class='line'>    if (concurrencyLevel &gt; MAX_SEGMENTS)
+</span><span class='line'>        concurrencyLevel = MAX_SEGMENTS; 
+</span><span class='line'>    //比如我输入的concurrencyLevel=12，那么sshift = 4，ssize =16，所以sshift是意思就是1左移了几次比concurrencyLevel大，ssize就是那个大于等于concurrencyLevel的最小2的幂次方的数
+</span><span class='line'>    int sshift = 0;
+</span><span class='line'>    int ssize = 1;
+</span><span class='line'>    while (ssize &lt; concurrencyLevel) {
+</span><span class='line'>        ++sshift;
+</span><span class='line'>        ssize &lt;&lt;= 1;  //ssize = ssize &lt;&lt; 1 , ssize = ssize * 2
+</span><span class='line'>    }
+</span><span class='line'>    segmentShift = 32 - sshift;
+</span><span class='line'>    segmentMask = ssize - 1;   //segmentMask的二进制是一个全是1的数 
+</span><span class='line'>    this.segments = Segment.newArray(ssize); //segment个数是ssize，也就是上图黄色方块数，默认16个
+</span><span class='line'>    if (initialCapacity &gt; MAXIMUM_CAPACITY)
+</span><span class='line'>        initialCapacity = MAXIMUM_CAPACITY;
+</span><span class='line'>    int c = initialCapacity / ssize;
+</span><span class='line'>    if (c * ssize &lt; initialCapacity)
+</span><span class='line'>        ++c;
+</span><span class='line'>    int cap = 1;
+</span><span class='line'>    while (cap &lt; c)
+</span><span class='line'>        cap &lt;&lt;= 1;   
+</span><span class='line'>    for (int i = 0; i &lt; this.segments.length; ++i)
+</span><span class='line'>        this.segments[i] = new Segment&lt;K,V&gt;(cap, loadFactor);//上图浅绿色块的个数是cap，是一个2的幂次方的数，默认是1，也就是每个segment下都构造了cap大小的table数组
+</span><span class='line'>}
+</span><span class='line'>Segment(int initialCapacity, float lf) {
+</span><span class='line'>    loadFactor = lf;
+</span><span class='line'>    setTable(HashEntry.&lt;K,V&gt;newArray(initialCapacity));//构造了一个initialCapacity大小的table
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>put方法：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>public V put(K key, V value) {
+</span><span class='line'>    if (value == null)
+</span><span class='line'>        throw new NullPointerException(); //明确指定value不能为null
+</span><span class='line'>    int hash = hash(key.hashCode());
+</span><span class='line'>    return segmentFor(hash).put(key, hash, value, false); //segmentFor如下，定位segment下标，然后再put
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>final Segment&lt;K,V&gt; segmentFor(int hash) {         //寻找segment的下标
+</span><span class='line'>    return segments[(hash &gt;&gt;&gt; segmentShift) & segmentMask];     //前面说了segmentMask是一个2进制全是1的数，那么&segmentMask就保证了下标小于等于segmentMask，与HashMap的寻下标相似。
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>//真正的put操作
+</span><span class='line'>V put(K key, int hash, V value, boolean onlyIfAbsent) {
+</span><span class='line'>    lock();          //先加锁，可以看到，put操作是在segment里面加锁的，也就是每个segment都可以加一把锁
+</span><span class='line'>    try {
+</span><span class='line'>        int c = count;
+</span><span class='line'>        if (c++ &gt; threshold) // ensure capacity
+</span><span class='line'>            rehash();   //判断容量，如果不够了就扩容
+</span><span class='line'>        HashEntry&lt;K,V&gt;[] tab = table;      //将table赋给一个局部变量tab，这是因为table是volatile变量，读写volatile变量的开销很大，编译器也不能对volatile变量的读写做任何优化，直接多次访问非volatile实例变量没有多大影响，编译器会做相应优化。
+</span><span class='line'>        int index = hash & (tab.length - 1);   //寻找table的下标
+</span><span class='line'>        HashEntry&lt;K,V&gt; first = tab[index];
+</span><span class='line'>        HashEntry&lt;K,V&gt; e = first;
+</span><span class='line'>        while (e != null && (e.hash != hash || !key.equals(e.key)))
+</span><span class='line'>            e = e.next;  //遍历单链表，找到key相同的为止，如果没找到，e指向链表尾
+</span><span class='line'>
+</span><span class='line'>        V oldValue;
+</span><span class='line'>        if (e != null) { //如果有相同的key，那么直接替换
+</span><span class='line'>            oldValue = e.value;
+</span><span class='line'>            if (!onlyIfAbsent)
+</span><span class='line'>                e.value = value;
+</span><span class='line'>        }
+</span><span class='line'>        else {  //否则在链表表头插入新的结点
+</span><span class='line'>            oldValue = null;
+</span><span class='line'>            ++modCount;
+</span><span class='line'>            tab[index] = new HashEntry&lt;K,V&gt;(key, hash, first, value);
+</span><span class='line'>            count = c; // write-volatile
+</span><span class='line'>        }
+</span><span class='line'>        return oldValue;
+</span><span class='line'>    } finally {
+</span><span class='line'>        unlock();
+</span><span class='line'>    }</span></code></pre></td></tr></table></div></figure>
+
+
+<p>该方法也是在持有段锁的情况下执行的，首先判断是否需要rehash，需要就先rehash，扩容都是针对单个段的，也就是单个段的数据数量大于设定的量的时候会触发扩容。接着是找是否存在同样一个key的结点，如果存在就直接替换这个结点的值。否则创建一个新的结点并添加到hash链的头部，这时一定要修改modCount和count的值，同样修改count的值一定要放在最后一步。put方法调用了rehash方法，reash方法实现得也很精巧，主要利用了table的大小为2<sup>n</sup>，和HashMap的扩容基本一样，这里就不介绍了。</p>
+
+<p>还有一个叫putIfAbsent(K key, V value)的函数，这个函数的实现和put几乎一模一样，作用是，如果map中不存在这个key，那么插入这个数据，如果存在这个key，那么不覆盖原来的value，也就是不插入了。</p>
+
+<p>get方法</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>public V get(Object key) {
+</span><span class='line'>    int hash = hash(key.hashCode());   //双hash，和HashMap一样，也是为了更好的离散化
+</span><span class='line'>    return segmentFor(hash).get(key, hash);  //先寻找segment的下标，然后再get
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>final Segment&lt;K,V&gt; segmentFor(int hash) {      //寻找segment的下标
+</span><span class='line'>    return segments[(hash &gt;&gt;&gt; segmentShift) & segmentMask];  //前面说了segmentMask是一个2进制全是1的数，那么&segmentMask就保证了下标小于等于segmentMask，与HashMap的寻下标相似。
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>V get(Object key, int hash) {// count是一个volatile变量，count非常巧妙，每次put和remove之后的最后一步都要更新count，就是为了get的时候不让编译器对代码进行重排序，来保证
+</span><span class='line'>    if (count != 0) { 
+</span><span class='line'>        HashEntry&lt;K,V&gt; e = getFirst(hash);   //寻找table的下标，也就是链表的表头
+</span><span class='line'>        while (e != null) {
+</span><span class='line'>            if (e.hash == hash && key.equals(e.key)) {
+</span><span class='line'>                V v = e.value;
+</span><span class='line'>                if (v != null)
+</span><span class='line'>                    return v;
+</span><span class='line'>                return readValueUnderLock(e); // recheck  加锁读，这个加锁读不用重新计算位置，而是直接拿e的值
+</span><span class='line'>            }
+</span><span class='line'>            e = e.next;
+</span><span class='line'>        }
+</span><span class='line'>    }
+</span><span class='line'>    return null;
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>HashEntry&lt;K,V&gt; getFirst(int hash) {
+</span><span class='line'>    HashEntry&lt;K,V&gt;[] tab = table;
+</span><span class='line'>    return tab[hash & (tab.length - 1)];
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>size方法：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>public int size() {
+</span><span class='line'>    final Segment&lt;K,V&gt;[] segments = this.segments;
+</span><span class='line'>    long sum = 0;
+</span><span class='line'>    long check = 0;
+</span><span class='line'>    int[] mc = new int[segments.length];
+</span><span class='line'>    // Try a few times to get accurate count. On failure due to
+</span><span class='line'>    // continuous async changes in table, resort to locking.
+</span><span class='line'>    for (int k = 0; k &lt; RETRIES_BEFORE_LOCK; ++k) {
+</span><span class='line'>        check = 0;
+</span><span class='line'>        sum = 0;
+</span><span class='line'>        int mcsum = 0;
+</span><span class='line'>        for (int i = 0; i &lt; segments.length; ++i) {
+</span><span class='line'>            sum += segments[i].count;           //循环相加每个段内数据的个数
+</span><span class='line'>            mcsum += mc[i] = segments[i].modCount;        //循环相加每个段内的modCount
+</span><span class='line'>        }
+</span><span class='line'>        if (mcsum != 0) {                   //如果是0，代表根本没有过数据更改，也就是size是0
+</span><span class='line'>            for (int i = 0; i &lt; segments.length; ++i) {
+</span><span class='line'>                check += segments[i].count;    //再次循环相加每个段内数据的个数，这里为什么会再算一次呢，后面会说
+</span><span class='line'>                if (mc[i] != segments[i].modCount) {    
+</span><span class='line'>                    check = -1; // force retry  //如果modCount和之前统计的不一致了，check直接赋值-1，重新再来
+</span><span class='line'>                    break;
+</span><span class='line'>                }
+</span><span class='line'>            }
+</span><span class='line'>        }
+</span><span class='line'>        if (check == sum)
+</span><span class='line'>            break;
+</span><span class='line'>    }
+</span><span class='line'>    if (check != sum) { // Resort to locking all segments
+</span><span class='line'>        sum = 0;
+</span><span class='line'>        for (int i = 0; i &lt; segments.length; ++i)  //循环获取所有segment的锁
+</span><span class='line'>            segments[i].lock();
+</span><span class='line'>        for (int i = 0; i &lt; segments.length; ++i)  //在持有所有段的锁的时候进行count的相加
+</span><span class='line'>            sum += segments[i].count;
+</span><span class='line'>        for (int i = 0; i &lt; segments.length; ++i)  //循环释放所有段的锁
+</span><span class='line'>            segments[i].unlock();
+</span><span class='line'>    }
+</span><span class='line'>    if (sum &gt; Integer.MAX_VALUE)            //return
+</span><span class='line'>        return Integer.MAX_VALUE;
+</span><span class='line'>    else
+</span><span class='line'>        return (int)sum;
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>  如果我们要统计整个ConcurrentHashMap里元素的大小，就必须统计所有Segment里元素的大小后求和。Segment里的全局变量count是一个volatile变量，那么在多线程场景下，我们是不是直接把所有Segment的count相加就可以得到整个ConcurrentHashMap大小了呢？不是的，虽然相加时可以获取每个Segment的count的最新值，但是拿到之后可能累加前使用的count发生了变化，那么统计结果就不准了。所以最安全的做法，是在统计size的时候把所有Segment的put，remove和clean方法全部锁住，但是这种做法显然非常低效，因为在累加count操作过程中，之前累加过的count发生变化的几率非常小，所以ConcurrentHashMap的做法是先尝试2次通过不锁住Segment的方式来统计各个Segment大小，如果统计的过程中，容器的count发生了变化，则再采用加锁的方式来统计所有Segment的大小。那么ConcurrentHashMap是如何判断在统计的时候容器是否发生了变化呢？使用modCount变量，在put , remove和clear方法里操作元素前都会将变量modCount进行加1，那么在统计size前后比较modCount是否发生变化，从而得知容器的大小是否发生变化。size()的实现还有一点需要注意，必须要先segments[i].count，才能segments[i].modCount，这是因为segment[i].count是对volatile变量的访问，接下来segments[i].modCount才能得到几乎最新的值，这里和get方法的方式是一样的，也是一个volatile写 happens-before volatile读的问题。</p>
+
+<p>上面18行代码，抛出了一个问题，就是为什么会再算一遍，上面说只需要比较modCount不变不就可以了么？但是仔细分析，就会发现，在13行14行代码那里，计算完count之后，计算modCount之前有可能count的值又变了，那么18行的代码主要是解决这个问题。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/09/20/innerclass/">InnerClass</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-09-20T19:24:08+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>7:24 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>内部类</h2>
+
+<p>内部类是定义在一个类内部的类，特点：
+1.内部类可以直接访问外部内中的成员变量。内部类要访问局部变量必须将局部变量用final修饰。
+2.内部类有两种定义方式，一种定义在方法体内，另外一种定义在方法体外。区别在于在方法体外了一定以3内部类的访问类型，可以使public,protected以及默认的。而不能在方法体内定义内部类的访问类型。
+3.内部类不能定义静态成员。
+4.静态内部类，在方法外部定义的内部类前面可以加上static关键字，从而成为Staic Nested Class,不再具备内部类的特征了。
+简单写一个匿名内部类例子(线程)</p>
+
+<pre class="brush:java;gutter:true;">
+    public class Outer{
+    pubic void start(){
+    new Tread(
+    new Runnable(){
+    public void run(){}
+    }).start();
+}
+}
+</pre>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -574,6 +1053,14 @@ class Customer implements Serializable {
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/08/27/javabing-fa-rong-qi/">Java并发容器</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/09/20/innerclass/">InnerClass</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/09/06/spring-security/">Spring-security</a>
       </li>
     
@@ -583,10 +1070,6 @@ class Customer implements Serializable {
     
       <li class="post">
         <a href="/blog/2015/08/28/transientguan-jian-zi/">Transient关键字</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/08/15/serializble/">“Java序列化”</a>
       </li>
     
   </ul>
@@ -602,7 +1085,7 @@ class Customer implements Serializable {
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2015 - Aries-ckt -
+  Copyright &copy; 2016 - Aries-ckt -
   <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
 </p>
 

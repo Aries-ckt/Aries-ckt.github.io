@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://aries-ckt.github.io/blog/2016/08/27/javabing-fa-rong-qi/</loc>
+    <lastmod>2016-08-27T14:47:46+08:00</lastmod>
+  </url>
+  <url>
+    <loc>http://aries-ckt.github.io/blog/2015/09/20/innerclass/</loc>
+    <lastmod>2015-09-20T19:24:08+08:00</lastmod>
+  </url>
+  <url>
     <loc>http://aries-ckt.github.io/blog/2015/09/06/spring-security/</loc>
     <lastmod>2015-09-06T21:01:45+08:00</lastmod>
   </url>
@@ -30,5 +38,17 @@
   </url>
   <url>
     <loc>http://aries-ckt.github.io/blog/categories/spring-security/</loc>
+  </url>
+  <url>
+    <loc>http://aries-ckt.github.io/blog/categories/java/</loc>
+  </url>
+  <url>
+    <loc>http://aries-ckt.github.io/blog/categories/inner/</loc>
+  </url>
+  <url>
+    <loc>http://aries-ckt.github.io/blog/categories/class/</loc>
+  </url>
+  <url>
+    <loc>http://aries-ckt.github.io/blog/categories/javabing-fa/</loc>
   </url>
 </urlset>
