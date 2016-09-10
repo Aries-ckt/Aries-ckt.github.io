@@ -1,0 +1,226 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Spring-security - Aries-ckt Blog</title>
+  <meta name="author" content="Aries-ckt">
+
+  
+  <meta name="description" content="spring-security授权以及验证方法总结 其授权验证方法过程： 1、当Web服务器启动时，通过Web.xml中对于Spring Security的配置，加载过滤器链，那么在加载MyFilterSecurityInterceptor类时，会注入 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://aries-ckt.github.io/blog/2015/09/06/spring-security/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Aries-ckt Blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.useso.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Aries-ckt Blog</a></h1>
+  
+    <h2>A blogging framework for Aries-ckt.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="aries-ckt.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Spring-security</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-09-06T21:01:45+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:01 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h2>spring-security授权以及验证方法总结</h2>
+
+<p>其授权验证方法过程：
+ 1、当Web服务器启动时，通过Web.xml中对于Spring Security的配置，加载过滤器链，那么在加载MyFilterSecurityInterceptor类时，会注入 MyInvocationSecurityMetadataSourceService、MyUserDetailsService、 MyAccessDecisionManager类。</p>
+
+<p> 2、该MyInvocationSecurityMetadataSourceService类在执行时会提取数据库中所有的用户权限，形成权限列表；
+并循环该权限列表，通过每个权限再从数据库中提取出该权限所对应的资源列表，并将资源（URL）作为key，权限列表作为value，形成Map结构的数据。</p>
+
+<p> 3、当用户登录时，AuthenticationManager进行响应，通过用户输入的用户名和密码，然后再根据用户定义的密码算法和盐值等进行计算并和数据库比对，
+当正确时通过验证。此时MyUserDetailsService进行响应，根据用户名从数据库中提取该用户的权限列表，组合成UserDetails供Spring Security使用。</p>
+
+<p> 4、当用户点击某个功能时，触发MyAccessDecisionManager类，该类通过decide方法对用户的资源访问进行拦截。
+用户点击某个功能时，实际上是请求某个URL或Action， 无论.jsp也好，.action或.do也好，在请求时无一例外的表现为URL。
+还记得第2步时那个Map结构的数据吗？ 若用户点击了"login.action"这个URL之后，那么这个URL就跟那个Map结构的数据中的key对比，若两者相同，
+则根据该url提取出Map结构的数据中的value来，这说明：若要请求这个URL，必须具有跟这个URL相对应的权限值。这个权限有可能是一个单独的权限，
+也有可能是一个权限列表，也就是说，一个URL有可能被多种权限访问。</p>
+
+<p> 那好，我们在MyAccessDecisionManager类的decide这个方法里，将通过URL取得的权限列表进行循环，然后跟第 3步中登录的用户所具有的权限进行比对，若相同，则表明该用户具有访问该资源的权利。 不大明白吧？  简单地说， 在数据库中我们定义了访问“LOGIN”这个URL必须是具有ROLE_ADMIN权限的人来访问，那么，登录用户恰恰具有该ROLE_ADMIN权限， 两者的比对过程中，就能够返回TRUE，可以允许该用户进行访问。就这么简单！</p>
+
+<p>不过在第2步的时候，一定要注意，MyInvocationSecurityMetadataSoruceService类的loadResourceDefine()方法中，形成以URL为key，权限列表为value的Map时，
+要注意key和Value的对应性，避免Value的不正确对应形成重复，这样会导致没有权限的人也能访问到不该访问到的资源。
+还有getAttributes()方法，要有 url.indexOf(&ldquo;?&rdquo;)这样的判断，要通过判断对URL特别是Action问号之前的部分进行匹配，防止用户请求的带参数的URL与你数据库中定义的URL不匹配，造成访问拒绝！</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Aries-ckt</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2015-09-06T21:01:45+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:01 pm</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/spring-security/'>spring-security</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://aries-ckt.github.io/blog/2015/09/06/spring-security/" data-via="" data-counturl="http://aries-ckt.github.io/blog/2015/09/06/spring-security/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015/09/05/bashji-chu-cao-zuo/" title="Previous Post: bash基础操作">&laquo; bash基础操作</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2015/09/20/innerclass/" title="Next Post: InnerClass">InnerClass &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/08/27/javabing-fa-rong-qi/">Java并发容器</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/09/20/innerclass/">InnerClass</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/09/06/spring-security/">Spring-security</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/09/05/bashji-chu-cao-zuo/">Bash基础操作</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/08/28/transientguan-jian-zi/">Transient关键字</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2016 - Aries-ckt -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
