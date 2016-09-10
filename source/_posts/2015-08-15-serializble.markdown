@@ -3,7 +3,7 @@ layout: post
 title: "“Java序列化”"
 date: 2015-08-15 12:31:15 +0800
 comments: true
-categories: Java序列化
+categories: Java基础知识
 ---
 #Java对象的序列化
 当两个进程在进行远程通信时，彼此可以发送各种类型的数据。无论是何种类型的数据，都会以二进制序列的形式在网络上传送。发送方需要把这个Java对象转换为字节序列，才能在网络上传送；接收方则需要把字节序列再恢复为Java对象。

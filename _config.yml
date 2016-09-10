@@ -2,10 +2,10 @@
 #      Main Configs       #
 # ----------------------- #
 
-url: http://yoursite.com
-title: My Octopress Blog
-subtitle: A blogging framework for hackers.
-author: Your Name
+url: http://aries-ckt.github.io
+title: Aries-ckt Blog
+subtitle: A blogging framework for Aries-ckt.
+author: Aries-ckt
 simple_search: https://www.google.com/search
 description:
 

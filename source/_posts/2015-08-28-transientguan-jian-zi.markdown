@@ -3,7 +3,7 @@ layout: post
 title: "transient关键字"
 date: 2015-08-28 21:22:17 +0800
 comments: true
-categories: Java序列化
+categories: Java基础知识
 ---
 #transient关键字作用及使用方法！
 我们都知道一个对象只要实现了Serilizable接口，这个对象就可以被序列化，java的这种序列化模式为开发者提供了很多便利，我们可以不必关系具体序列化的过程，只要这个类实现了Serilizable接口，这个类的所有属性和方法都会自动序列化。
